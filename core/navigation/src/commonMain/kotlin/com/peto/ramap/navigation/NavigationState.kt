@@ -180,7 +180,14 @@ class NavigationState(
             return
         }
 
-        selectTopLevelTab(TabStatus.MAP)
+        selectBottomTab(TabStatus.MAP)
+    }
+
+    fun selectBottomTab(tab: TabStatus) {
+        if (tab == selectedTab) return
+
+        backStacks[TabStatus.FEED]?.clear()
+        selectTopLevelTab(tab)
     }
 
     fun selectTopLevelTab(tab: TabStatus) {
@@ -194,6 +201,10 @@ class NavigationState(
         }
         if (selectedTab == TabStatus.MAP) {
             clearRequestedShopFromMapRoute()
+        }
+        if (tab == TabStatus.FEED) {
+            val feedBackStack = backStacks.getValue(TabStatus.FEED)
+            if (feedBackStack.isEmpty()) feedBackStack.add(ScreenRoutes.FeedTabRoutes)
         }
         selectedTab = tab
     }

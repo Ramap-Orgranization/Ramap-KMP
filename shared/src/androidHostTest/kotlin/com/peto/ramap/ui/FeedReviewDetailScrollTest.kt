@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.onNodeWithText
@@ -39,6 +40,7 @@ import com.peto.ramap.ui.main.feed.FeedRoute
 import com.peto.ramap.ui.main.feed.FeedViewModel
 import org.junit.runner.RunWith
 import org.koin.compose.KoinApplication
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.koinConfiguration
 import org.koin.dsl.module
 import org.robolectric.RobolectricTestRunner
@@ -61,7 +63,7 @@ class FeedReviewDetailScrollTest {
     }
 
     @Test
-    fun `리뷰 상세에서 돌아오면 피드 위치를 복원하고 정렬이나 필터를 바꾸면 맨 위에서 시작한다`() =
+    fun `리뷰 상세에서 돌아오면 피드 위치를 복원하고 정렬 필터 또는 하단 탭을 바꾸면 초기화한다`() =
         runComposeUiTest {
             val shop = ramenShopFixture(id = "shop")
             val rows =
@@ -81,21 +83,25 @@ class FeedReviewDetailScrollTest {
 
                     override suspend fun fetchBlockedReviewOnce(reviewId: String): RamapResult<Review?> = RamapResult.Success(null)
                 }
-            val reducer = ReviewChangeReducer()
-            val viewModel =
-                FeedViewModel(
-                    repository,
-                    FakeUserModerationRepository(),
-                    FakeProfileRepository("viewer"),
-                    FakeShopReviewRepository(),
-                    FakeReviewChangeStore().apply { reset("viewer") },
-                    reducer,
-                    RefreshReviewListUseCase(reducer),
-                )
-            val loginModule = module { single { LoginGuideController() } }
+            val feedModule =
+                module {
+                    single { LoginGuideController() }
+                    viewModel {
+                        val reducer = ReviewChangeReducer()
+                        FeedViewModel(
+                            repository,
+                            FakeUserModerationRepository(),
+                            FakeProfileRepository("viewer"),
+                            FakeShopReviewRepository(),
+                            FakeReviewChangeStore().apply { reset("viewer") },
+                            reducer,
+                            RefreshReviewListUseCase(reducer),
+                        )
+                    }
+                }
             val toastManager = ToastManager()
             setContent {
-                KoinApplication(configuration = koinConfiguration { modules(loginModule) }) {
+                KoinApplication(configuration = koinConfiguration { modules(feedModule) }) {
                     RamapTheme {
                         val navigation = rememberNavigationState()
                         NavigationRouter(
@@ -111,7 +117,6 @@ class FeedReviewDetailScrollTest {
                                     onLoginTypeSelected = {},
                                     onFindVisitedShop = {},
                                     shopDetailContent = { _, _ -> },
-                                    viewModel = viewModel,
                                     toastManager = toastManager,
                                     onOpenReviewDetail = navigation::showReviewDetail,
                                 )
@@ -160,6 +165,18 @@ class FeedReviewDetailScrollTest {
 
             list.performScrollToKey("review-11")
             onNodeWithText("저장한 매장").performClick()
+            onNodeWithText("라멘 리뷰 0").assertIsDisplayed()
+
+            onNodeWithText("인기순").performClick()
+            onNodeWithText("최신순").performClick()
+            onNodeWithText("전체").performClick()
+            list.performScrollToKey("review-11")
+            review.assertIsDisplayed()
+            onNodeWithText("지도").performClick()
+            onNodeWithText("지도").assertIsSelected()
+            onNodeWithText("피드").performClick()
+
+            onNodeWithText("최신순").assertIsDisplayed()
             onNodeWithText("라멘 리뷰 0").assertIsDisplayed()
         }
 }

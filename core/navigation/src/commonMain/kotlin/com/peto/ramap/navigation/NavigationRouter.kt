@@ -45,7 +45,7 @@ fun NavigationRouter(
     importationGuideScreen: @Composable () -> Unit,
     eventScreen: @Composable (ScreenRoutes.EventDetailRoutes) -> Unit,
 ) {
-    val onTabSelected: (TabStatus) -> Unit = navigationState::selectTopLevelTab
+    val onTabSelected: (TabStatus) -> Unit = navigationState::selectBottomTab
     val routeEntryProvider: (NavKey) -> NavEntry<NavKey> =
         entryProvider {
             entry<ScreenRoutes.MapRoutes> { route ->

@@ -172,6 +172,35 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `피드에서 다른 탭을 선택하면 피드 스택을 비우고 새 루트로 다시 진입한다`() {
+        val state = navigationState()
+        state.selectBottomTab(TabStatus.FEED)
+        val feedBackStack = state.currentBackStack
+        state.showReviewDetail("review-id")
+
+        state.selectBottomTab(TabStatus.RANKING)
+
+        assertTrue(feedBackStack.isEmpty())
+        state.selectBottomTab(TabStatus.FEED)
+        assertEquals(listOf(ScreenRoutes.FeedTabRoutes), state.currentBackStack.toList())
+    }
+
+    @Test
+    fun `피드에서 연 지도 상세를 뒤로 가면 기존 피드로 복귀한다`() {
+        val state = navigationState()
+        state.selectTopLevelTab(TabStatus.FEED)
+        val feedBackStack = state.currentBackStack
+
+        state.showShopOnMap(shopId = "shop-id", returnTab = TabStatus.FEED)
+
+        assertEquals(listOf(ScreenRoutes.FeedTabRoutes), feedBackStack.toList())
+        state.pop()
+
+        assertEquals(TabStatus.FEED, state.selectedTab)
+        assertEquals(ScreenRoutes.FeedTabRoutes, state.currentRoute)
+    }
+
+    @Test
     fun `다른 탭으로 복원돼도 랭킹 스택을 유지한다`() {
         val rankingBackStack = NavBackStack<NavKey>(ScreenRoutes.RankingTabRoutes)
 
