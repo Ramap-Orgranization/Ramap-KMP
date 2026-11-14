@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -17,12 +16,12 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_review_comment_outline
+import ramap.shared.generated.resources.ic_review_comment_collapsed
+import ramap.shared.generated.resources.ic_review_comment_expanded
 import ramap.shared.generated.resources.review_comments
 import ramap.shared.generated.resources.review_comments_collapse
 import ramap.shared.generated.resources.review_comments_expand
@@ -37,6 +36,7 @@ internal fun ReviewCommentButton(
 ) {
     val label = count?.let { stringResource(Res.string.review_comments_total, it) } ?: stringResource(Res.string.review_comments)
     val action = stringResource(if (expanded) Res.string.review_comments_collapse else Res.string.review_comments_expand)
+    val icon = if (expanded) Res.drawable.ic_review_comment_expanded else Res.drawable.ic_review_comment_collapsed
     Row(
         modifier =
             Modifier
@@ -48,10 +48,9 @@ internal fun ReviewCommentButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(Res.drawable.ic_review_comment_outline),
+            painter = painterResource(icon),
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            colorFilter = ColorFilter.tint(if (expanded) BrandColor.SecondPrimary else GrayColor.C300),
         )
         AppText(text = count?.toString() ?: "–", style = AppTextStyle.B2, color = GrayColor.C500)
     }
