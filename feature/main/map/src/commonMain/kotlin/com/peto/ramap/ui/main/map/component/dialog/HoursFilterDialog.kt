@@ -64,8 +64,8 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.ic_hours_filter_calendar
 import ramap.shared.generated.resources.ic_hours_filter_clock
-import ramap.shared.generated.resources.ic_hours_filter_reset
 import ramap.shared.generated.resources.ic_hours_filter_storefront
+import ramap.shared.generated.resources.ic_refresh
 import ramap.shared.generated.resources.map_hours_filter_all_shops
 import ramap.shared.generated.resources.map_hours_filter_apply_with_count
 import ramap.shared.generated.resources.map_hours_filter_close
@@ -335,8 +335,9 @@ private fun HoursFilterDialogActions(
             textColor = GrayColor.C400,
             backgroundColor = CommonColor.White,
             border = BorderStroke(1.dp, GrayColor.C100),
-            icon = Res.drawable.ic_hours_filter_reset,
-            iconSize = 22.dp,
+            icon = Res.drawable.ic_refresh,
+            iconSize = 16.dp,
+            iconTint = GrayColor.C400,
             modifier = Modifier.width(92.dp),
         )
         AppButton(
