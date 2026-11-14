@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.domain.model.shop.ShopVisitTimeWindow
+import com.peto.ramap.ui.main.map.component.dialog.Option
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -40,10 +41,4 @@ internal data class HoursFilterDialogUiState(
         time: LocalTime,
         window: ShopVisitTimeWindow,
     ): HoursFilterDialogUiState = copy(visitTime = LocalDateTime(visitDateTime(window).date, time))
-
-    enum class Option {
-        All,
-        OpenNow,
-        VisitTime,
-    }
 }

@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -54,6 +55,7 @@ class HoursFilterMenuTest {
     }
 
     @Test
+    @Config(qualifiers = "w360dp-h700dp")
     fun `영업시간 다이얼로그에서 방문 날짜와 시간을 고르고 적용한다`() =
         runComposeUiTest {
             var selected by mutableStateOf<ShopHoursFilter>(ShopHoursFilter.All)
@@ -63,7 +65,13 @@ class HoursFilterMenuTest {
                         HoursFilterMenu(
                             selected = selected,
                             now = LocalDateTime(2026, 11, 14, 18, 45),
-                            resultCount = { 3 },
+                            resultCount = { filter ->
+                                when (filter) {
+                                    ShopHoursFilter.All -> 7
+                                    ShopHoursFilter.OpenNow -> 2
+                                    is ShopHoursFilter.VisitTime -> 3
+                                }
+                            },
                             onOpen = {},
                             onApply = { selected = it },
                         )
@@ -76,13 +84,34 @@ class HoursFilterMenuTest {
             waitUntilExactlyOneExists(dialogTitle)
             onNode(dialogTitle).assertIsDisplayed()
             onNodeWithText("전체 매장").assertIsSelected()
+            onNodeWithText("필터 적용(7개)").assertIsDisplayed()
+            onNodeWithText("2026년 11월").assertDoesNotExist()
             onNodeWithText("방문 시간 선택").performClick()
             onNodeWithText("2026년 11월").performScrollTo().assertIsDisplayed()
             onNodeWithContentDescription("11월 15일 일요일").performScrollTo().assertIsDisplayed().performClick()
             onNodeWithContentDescription("11월 15일 일요일").assertIsSelected()
+            onNodeWithContentDescription("11월 14일 토요일").assertIsNotSelected()
             onNodeWithText("07:00").assertDoesNotExist()
             onNodeWithText("08:30").assertDoesNotExist()
             onNodeWithText("08:00").performScrollTo().performClick()
+            val headerBounds = onNode(dialogTitle).getBoundsInRoot()
+            val optionBounds = onNodeWithText("방문 시간 선택").getBoundsInRoot()
+            val applyBounds = onNodeWithText("필터 적용(3개)").getBoundsInRoot()
+            val month = onNodeWithText("2026년 11월")
+            val monthBounds = month.getBoundsInRoot()
+            onNodeWithText("23:00").performScrollTo().assertIsDisplayed()
+            assertTrue(month.getBoundsInRoot() != monthBounds)
+            assertEquals(headerBounds, onNode(dialogTitle).getBoundsInRoot())
+            assertEquals(optionBounds, onNodeWithText("방문 시간 선택").getBoundsInRoot())
+            assertEquals(applyBounds, onNodeWithText("필터 적용(3개)").getBoundsInRoot())
+
+            onNodeWithText("영업 중").performClick().assertIsSelected()
+            onNodeWithText("2026년 11월").assertDoesNotExist()
+            onNodeWithText("08:00").assertDoesNotExist()
+            onNodeWithText("필터 적용(2개)").assertIsDisplayed()
+            onNodeWithText("방문 시간 선택").performClick()
+            onNodeWithContentDescription("11월 15일 일요일").performScrollTo().assertIsSelected()
+            onNodeWithText("08:00").performScrollTo().assertIsSelected()
             runOnIdle { assertEquals(ShopHoursFilter.All, selected) }
 
             onNode(hasText("필터 적용", substring = true)).assertIsDisplayed().performClick()
@@ -101,6 +130,49 @@ class HoursFilterMenuTest {
             onNodeWithText("초기화").performClick()
             onNode(hasText("필터 적용", substring = true)).performClick()
             runOnIdle { assertEquals(ShopHoursFilter.All, selected) }
+        }
+
+    @Test
+    @Config(qualifiers = "w320dp-h480dp")
+    fun `작은 화면에서 마지막 시간까지 스크롤해도 제목과 하단 버튼을 사용할 수 있다`() =
+        runComposeUiTest {
+            var selected by mutableStateOf<ShopHoursFilter>(ShopHoursFilter.All)
+            setContent {
+                RamapTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        HoursFilterMenu(
+                            selected = selected,
+                            now = LocalDateTime(2026, 11, 14, 6, 0),
+                            resultCount = { 0 },
+                            onOpen = {},
+                            onApply = { selected = it },
+                        )
+                    }
+                }
+            }
+
+            onNodeWithText("영업시간").performClick()
+            val title = onNode(hasText("영업시간 필터 설정") and hasAnyAncestor(isDialog()))
+            val apply = onNodeWithText("필터 적용(0개)")
+            val compactHeight = apply.getBoundsInRoot().bottom - title.getBoundsInRoot().top
+
+            onNodeWithText("방문 시간 선택").performClick()
+            val expandedHeight = apply.getBoundsInRoot().bottom - title.getBoundsInRoot().top
+            assertTrue(expandedHeight > compactHeight)
+            val headerBounds = title.getBoundsInRoot()
+            val applyBounds = apply.getBoundsInRoot()
+
+            onNodeWithContentDescription("11월 20일 금요일").performScrollTo().assertIsDisplayed().performClick()
+            onNodeWithText("23:00")
+                .performScrollTo()
+                .assertIsDisplayed()
+                .performClick()
+                .assertIsSelected()
+            assertEquals(headerBounds, title.getBoundsInRoot())
+            assertEquals(applyBounds, apply.getBoundsInRoot())
+            onNodeWithText("초기화").assertIsDisplayed()
+            apply.assertIsDisplayed().performClick()
+            runOnIdle { assertEquals(ShopHoursFilter.VisitTime(LocalDateTime(2026, 11, 20, 23, 0)), selected) }
         }
 
     @Test

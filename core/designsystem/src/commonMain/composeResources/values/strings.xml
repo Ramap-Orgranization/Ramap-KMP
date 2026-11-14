@@ -399,6 +399,7 @@
     <string name="map_hours_filter_open_now">영업 중</string>
     <string name="map_hours_filter_visit">방문 시간 선택</string>
     <string name="map_hours_filter_dialog_title">영업시간 필터 설정</string>
+    <string name="map_hours_filter_dialog_description">원하는 영업 상태와 방문 시간을 선택하세요.</string>
     <string name="map_hours_filter_close">닫기</string>
     <string name="map_hours_filter_select_date">방문 날짜 선택</string>
     <string name="map_hours_filter_month">%1$d년 %2$d월</string>

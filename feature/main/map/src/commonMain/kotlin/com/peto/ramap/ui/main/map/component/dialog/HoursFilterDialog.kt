@@ -1,20 +1,22 @@
 package com.peto.ramap.ui.main.map.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -23,12 +25,10 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,10 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.peto.ramap.designsystem.button.AppButton
@@ -53,24 +53,29 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.LocalAppTypography
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.component.dialog.Option
 import com.peto.ramap.ui.main.map.contract.HoursFilterDialogUiState
-import com.peto.ramap.ui.main.map.contract.HoursFilterDialogUiState.Option
 import kotlinx.datetime.LocalDateTime
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_clock
 import ramap.shared.generated.resources.ic_close
-import ramap.shared.generated.resources.ic_refresh
+import ramap.shared.generated.resources.ic_hours_filter_calendar
+import ramap.shared.generated.resources.ic_hours_filter_clock
+import ramap.shared.generated.resources.ic_hours_filter_reset
+import ramap.shared.generated.resources.ic_hours_filter_storefront
 import ramap.shared.generated.resources.map_hours_filter_all_shops
 import ramap.shared.generated.resources.map_hours_filter_apply_with_count
 import ramap.shared.generated.resources.map_hours_filter_close
+import ramap.shared.generated.resources.map_hours_filter_dialog_description
 import ramap.shared.generated.resources.map_hours_filter_dialog_title
 import ramap.shared.generated.resources.map_hours_filter_open_now
 import ramap.shared.generated.resources.map_hours_filter_reset
 import ramap.shared.generated.resources.map_hours_filter_visit
+
+private val MinHeightForFixedOptions = 320.dp
 
 @Composable
 internal fun HoursFilterDialog(
@@ -87,10 +92,17 @@ internal fun HoursFilterDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false),
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnClickOutside = false,
+            ),
     ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding(),
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding(),
             contentAlignment = Alignment.Center,
         ) {
             Box(Modifier.matchParentSize().noRippleClickable(onClick = onDismiss))
@@ -105,8 +117,7 @@ internal fun HoursFilterDialog(
                     Modifier
                         .padding(horizontal = 12.dp, vertical = 16.dp)
                         .widthIn(max = 400.dp)
-                        .fillMaxWidth()
-                        .heightIn(max = (maxHeight - 32.dp).coerceIn(0.dp, 648.dp)),
+                        .fillMaxWidth(),
             )
         }
     }
@@ -122,138 +133,183 @@ private fun HoursFilterDialogContent(
     onApply: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val typography = LocalAppTypography.current
-    val dialogTypography =
-        remember(typography) {
-            typography.copy(
-                t2 = typography.t2.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp, fontFeatureSettings = "tnum"),
-                b2 = typography.b2.copy(letterSpacing = 0.sp),
-                b4 = typography.b4.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.sp, fontFeatureSettings = "tnum"),
-                c1 = typography.c1.copy(letterSpacing = 0.sp, fontFeatureSettings = "tnum"),
-            )
-        }
-    CompositionLocalProvider(LocalAppTypography provides dialogTypography) {
-        Surface(
-            modifier = modifier,
-            shape = RoundedCornerShape(20.dp),
-            color = CommonColor.White,
-            shadowElevation = 4.dp,
-        ) {
-            Column(modifier = if (state.option == Option.VisitTime) Modifier.fillMaxHeight() else Modifier) {
-                HoursFilterDialogHeader(onDismiss = onDismiss)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        color = CommonColor.White,
+        shadowElevation = 4.dp,
+    ) {
+        Column {
+            HoursFilterDialogHeader(onDismiss = onDismiss)
+
+            BoxWithConstraints(
+                modifier = Modifier.weight(1f, fill = false),
+            ) {
+                val scrollOptions = maxHeight < MinHeightForFixedOptions
+                val optionsScroll = rememberScrollState()
+                val pickerScroll = rememberScrollState()
 
                 Column(
                     modifier =
                         Modifier
-                            .weight(1f, fill = state.option == Option.VisitTime)
-                            .verticalScroll(rememberScrollState())
-                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                            .fillMaxWidth()
+                            .then(if (scrollOptions) Modifier.verticalScroll(optionsScroll) else Modifier)
+                            .padding(horizontal = 16.dp),
                 ) {
-                    Column(
-                        modifier = Modifier.selectableGroup(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        HoursFilterOptionRow(
-                            text = stringResource(Res.string.map_hours_filter_all_shops),
-                            selected = state.option == Option.All,
-                            onClick = { onStateChange(state.select(Option.All)) },
-                        )
-                        HoursFilterOptionRow(
-                            text = stringResource(Res.string.map_hours_filter_open_now),
-                            selected = state.option == Option.OpenNow,
-                            onClick = { onStateChange(state.select(Option.OpenNow)) },
-                        )
-                        HoursFilterOptionRow(
-                            text = stringResource(Res.string.map_hours_filter_visit),
-                            selected = state.option == Option.VisitTime,
-                            onClick = { onStateChange(state.select(Option.VisitTime)) },
-                        )
-                    }
+                    HoursFilterOptions(
+                        selectedOption = state.option,
+                        onSelect = { onStateChange(state.select(it)) },
+                    )
 
                     if (state.option == Option.VisitTime) {
-                        val visit = state.visitDateTime(window)
                         HoursFilterVisitPicker(
-                            visit = visit,
+                            visit = state.visitDateTime(window),
                             window = window,
                             onDateSelected = { onStateChange(state.selectDate(it, window)) },
                             onTimeSelected = { onStateChange(state.selectTime(it, window)) },
+                            modifier =
+                                if (scrollOptions) {
+                                    Modifier
+                                } else {
+                                    Modifier
+                                        .weight(1f, fill = false)
+                                        .verticalScroll(pickerScroll)
+                                },
                         )
+                    } else {
+                        Spacer(Modifier.height(16.dp))
                     }
                 }
-
-                HorizontalDivider(color = GrayColor.C100)
-                HoursFilterDialogActions(
-                    selectedCount = selectedCount,
-                    onReset = { onStateChange(HoursFilterDialogUiState()) },
-                    onApply = onApply,
-                )
             }
+
+            HorizontalDivider(color = GrayColor.C100)
+            HoursFilterDialogActions(
+                selectedCount = selectedCount,
+                onReset = { onStateChange(HoursFilterDialogUiState()) },
+                onApply = onApply,
+            )
         }
     }
 }
 
 @Composable
 private fun HoursFilterDialogHeader(onDismiss: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-        contentAlignment = Alignment.Center,
+    Column(
+        modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 16.dp),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_clock),
-                contentDescription = null,
-                tint = GrayColor.C500,
-                modifier = Modifier.size(20.dp),
-            )
             AppText(
                 text = stringResource(Res.string.map_hours_filter_dialog_title),
-                style = AppTextStyle.T2,
+                style = AppTextStyle.H4,
                 color = GrayColor.C500,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .semantics { heading() },
             )
-        }
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
             AppIconButton(
                 icon = Res.drawable.ic_close,
                 contentDescription = stringResource(Res.string.map_hours_filter_close),
                 onClick = onDismiss,
-                modifier = Modifier.padding(end = 12.dp),
             )
         }
+        AppText(
+            text = stringResource(Res.string.map_hours_filter_dialog_description),
+            style = AppTextStyle.C1,
+            color = GrayColor.C300,
+            modifier = Modifier.padding(end = 8.dp),
+        )
+    }
+}
+
+@Composable
+private fun HoursFilterOptions(
+    selectedOption: Option,
+    onSelect: (Option) -> Unit,
+) {
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .border(1.dp, GrayColor.C100, shape)
+                .selectableGroup(),
+    ) {
+        HoursFilterOptionRow(
+            icon = Res.drawable.ic_hours_filter_calendar,
+            title = stringResource(Res.string.map_hours_filter_all_shops),
+            selected = selectedOption == Option.All,
+            onClick = { onSelect(Option.All) },
+        )
+        HorizontalDivider(color = GrayColor.C100)
+        HoursFilterOptionRow(
+            icon = Res.drawable.ic_hours_filter_storefront,
+            title = stringResource(Res.string.map_hours_filter_open_now),
+            selected = selectedOption == Option.OpenNow,
+            onClick = { onSelect(Option.OpenNow) },
+        )
+        HorizontalDivider(color = GrayColor.C100)
+        HoursFilterOptionRow(
+            icon = Res.drawable.ic_hours_filter_clock,
+            title = stringResource(Res.string.map_hours_filter_visit),
+            selected = selectedOption == Option.VisitTime,
+            onClick = { onSelect(Option.VisitTime) },
+        )
     }
 }
 
 @Composable
 private fun HoursFilterOptionRow(
-    text: String,
+    icon: DrawableResource,
+    title: String,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(8.dp)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 44.dp)
-                .clip(shape)
+                .heightIn(min = 52.dp)
+                .background(if (selected) BrandColor.SubtleFill else CommonColor.White)
                 .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(start = 12.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(32.dp)
+                    .background(
+                        color = if (selected) CommonColor.White else GrayColor.C050,
+                        shape = RoundedCornerShape(8.dp),
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+            )
+        }
         AppText(
-            text = text,
-            style = AppTextStyle.B2,
+            text = title,
+            style = AppTextStyle.B1,
             color = GrayColor.C500,
             modifier = Modifier.weight(1f),
         )
         RadioButton(
             selected = selected,
             onClick = null,
-            colors = RadioButtonDefaults.colors(selectedColor = BrandColor.Primary, unselectedColor = GrayColor.C300),
+            colors =
+                RadioButtonDefaults.colors(
+                    selectedColor = BrandColor.Primary,
+                    unselectedColor = GrayColor.C200,
+                ),
         )
     }
 }
@@ -265,7 +321,10 @@ private fun HoursFilterDialogActions(
     onApply: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -276,34 +335,23 @@ private fun HoursFilterDialogActions(
             textColor = GrayColor.C400,
             backgroundColor = CommonColor.White,
             border = BorderStroke(1.dp, GrayColor.C100),
-            icon = Res.drawable.ic_refresh,
-            iconSize = 16.dp,
-            iconTint = GrayColor.C400,
-            height = 48.dp,
-            cornerRadius = 8.dp,
-            modifier = Modifier.width(76.dp),
+            icon = Res.drawable.ic_hours_filter_reset,
+            iconSize = 22.dp,
+            modifier = Modifier.width(92.dp),
         )
-        Surface(
+        AppButton(
+            text = stringResource(Res.string.map_hours_filter_apply_with_count, selectedCount),
             onClick = onApply,
-            modifier = Modifier.weight(1f).height(48.dp),
-            color = BrandColor.Primary,
-            shape = RoundedCornerShape(8.dp),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                AppText(
-                    text = stringResource(Res.string.map_hours_filter_apply_with_count, selectedCount),
-                    style = AppTextStyle.B1,
-                    color = BrandColor.OnFill,
-                )
-            }
-        }
+            modifier = Modifier.weight(1f),
+            textStyle = AppTextStyle.B1,
+            textColor = BrandColor.OnFill,
+            backgroundColor = BrandColor.Primary,
+        )
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "영업시간 필터 설정", showBackground = true, widthDp = 360, heightDp = 760)
+@Preview(name = "작은 화면의 영업시간 필터 설정", showBackground = true, widthDp = 320, heightDp = 480)
 @Composable
 private fun HoursFilterDialogPreview() {
     RamapTheme {
@@ -314,7 +362,10 @@ private fun HoursFilterDialogPreview() {
             onStateChange = {},
             onDismiss = {},
             onApply = {},
-            modifier = Modifier.padding(12.dp).fillMaxWidth().heightIn(max = 620.dp),
+            modifier =
+                Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
         )
     }
 }
