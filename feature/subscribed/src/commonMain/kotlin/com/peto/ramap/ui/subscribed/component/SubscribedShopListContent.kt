@@ -9,36 +9,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.card.EventCard
-import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
-import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
-import com.peto.ramap.designsystem.text.eventDateText
-import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.notification_removal_confirm_action
 import ramap.shared.generated.resources.shop_notification_settings_title
 import ramap.shared.generated.resources.subscribed_shops_empty_title
-import ramap.shared.generated.resources.top_level_tab_event
 
 @Composable
 internal fun SubscribedShopListContent(
-    uiState: SubscribedShopsUiState,
+    shops: RamenShops,
     onShopOpen: (RamenShop) -> Unit,
     onShopNotificationSettingsOpen: (RamenShop) -> Unit,
-    onEventOpen: (ShopEvent) -> Unit,
-    onEventRemovalRequested: (String) -> Unit,
 ) {
-    if (uiState.showsEmptyContent) {
+    if (shops.isEmpty()) {
         ShopsEmptyContent(
             title = stringResource(Res.string.subscribed_shops_empty_title),
             modifier = Modifier.fillMaxSize(),
@@ -50,40 +39,14 @@ internal fun SubscribedShopListContent(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
         ) {
-            ShopListCount(count = uiState.shops.size)
-            if (uiState.showsSubscribedEvents) {
-                SectionCard(
-                    title = stringResource(Res.string.top_level_tab_event),
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                ) {
-                    uiState.subscribedEvents.forEach { event ->
-                        EventCard(
-                            event = event,
-                            dateText =
-                                eventDateText(
-                                    event.startDate,
-                                    ShopEventResourceMapper.displayEndDate(event),
-                                ),
-                            onClick = { onEventOpen(event) },
-                            isCancelled = event.isCancelledToday,
-                            isSoldOut = event.isSoldOutToday,
-                            actionLabel = stringResource(Res.string.notification_removal_confirm_action),
-                            onAction = { onEventRemovalRequested(event.id) },
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                        )
-                    }
-                }
-            }
-
-            if (uiState.showsShops) {
-                RamenShopSummaries(
-                    shops = uiState.shops,
-                    onShopClick = onShopOpen,
-                    itemActionLabel = stringResource(Res.string.shop_notification_settings_title),
-                    onItemAction = onShopNotificationSettingsOpen,
-                    modifier = Modifier.padding(horizontal = 15.dp),
-                )
-            }
+            ShopListCount(count = shops.size)
+            RamenShopSummaries(
+                shops = shops,
+                onShopClick = onShopOpen,
+                itemActionLabel = stringResource(Res.string.shop_notification_settings_title),
+                onItemAction = onShopNotificationSettingsOpen,
+                modifier = Modifier.padding(horizontal = 15.dp),
+            )
         }
     }
 }
@@ -92,21 +55,12 @@ internal fun SubscribedShopListContent(
 @Composable
 private fun SubscribedShopListContentPreview() {
     val shopProvider = RamenShopPreviewParameterProvider()
-    val eventProvider = ShopEventPreviewParameterProvider()
 
     RamapTheme {
         SubscribedShopListContent(
-            uiState =
-                SubscribedShopsUiState(
-                    shops = RamenShops(shopProvider.ramenShopPreviewSamples),
-                    subscribedEvents = eventProvider.values.toList(),
-                    haveShopsLoaded = true,
-                    haveEventsLoaded = true,
-                ),
+            shops = RamenShops(shopProvider.ramenShopPreviewSamples),
             onShopOpen = {},
             onShopNotificationSettingsOpen = {},
-            onEventOpen = {},
-            onEventRemovalRequested = {},
         )
     }
 }
@@ -116,15 +70,9 @@ private fun SubscribedShopListContentPreview() {
 private fun SubscribedShopListContentEmptyPreview() {
     RamapTheme {
         SubscribedShopListContent(
-            uiState =
-                SubscribedShopsUiState(
-                    haveShopsLoaded = true,
-                    haveEventsLoaded = true,
-                ),
+            shops = RamenShops(emptyMap()),
             onShopOpen = {},
             onShopNotificationSettingsOpen = {},
-            onEventOpen = {},
-            onEventRemovalRequested = {},
         )
     }
 }

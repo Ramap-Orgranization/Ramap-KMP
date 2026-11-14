@@ -371,7 +371,6 @@ internal fun NavigationGraph(
                         onBack = navigationState::pop,
                         onShopOpen = onShopOpen,
                         onShopNotificationSettingsOpen = onShopNotificationSettingsOpen,
-                        onEventOpen = navigationState::showEvent,
                     )
                 }
             }

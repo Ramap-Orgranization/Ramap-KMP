@@ -4,6 +4,4 @@ import com.peto.ramap.ui.loading.LoadKey
 
 enum class SubscribedShopsLoadKey : LoadKey {
     SHOPS,
-    EVENTS,
-    REMOVE,
 }

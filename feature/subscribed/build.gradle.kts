@@ -5,7 +5,6 @@ plugins {
 kotlin {
     sourceSets.commonMain {
         dependencies {
-            implementation(projects.core.analytics)
             implementation(projects.core.preview)
         }
     }
