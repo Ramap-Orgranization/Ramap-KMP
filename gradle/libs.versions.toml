@@ -25,6 +25,7 @@ navigation3-ui = "1.1.1"
 # Compose Multiplatform
 compose-multiplatform = "1.11.1"
 material3 = "1.11.0-alpha07"
+jindong = "1.1.0"
 
 # Dependency Injection
 koin = "4.2.2"
@@ -99,6 +100,7 @@ compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.re
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
 compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose-multiplatform" }
 compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-multiplatform" }
+jindong-core = { module = "io.github.compose-jindong:jindong-core", version.ref = "jindong" }
 
 # Dependency Injection
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }

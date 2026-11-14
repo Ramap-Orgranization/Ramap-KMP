@@ -7,6 +7,7 @@ kotlin {
     sourceSets.commonMain.dependencies {
         implementation(libs.kotlinx.coroutines.core)
         implementation(libs.androidx.datastore.preferences)
+        implementation(libs.jindong.core)
     }
     sourceSets.androidHostTest.dependencies {
         implementation(libs.robolectric)
