@@ -65,17 +65,14 @@ internal fun OverlayHost(
                         onShowOnMap = onShowOnMap,
                         onReviewNavigate = { selectedShopId ->
                             overlayState.overlayProfileUserId = null
-                            overlayState.overlayReviewWriteArgs = selectedShopId to null
+                            overlayState.openReviewEditor(selectedShopId, null)
                         },
-                        onEditReview = { selectedShopId, reviewId ->
-                            overlayState.overlayProfileUserId = null
-                            overlayState.overlayReviewWriteArgs = selectedShopId to reviewId
-                        },
+                        onEditReview = overlayState::openReviewEditor,
                         onOpenProfile = { userId -> overlayState.openProfile(userId, true) },
                         onEventNavigate = onEventNavigate,
                         isNavigationBarPadded = true,
                         originSource = AnalyticsSource.REVIEW_PROFILE,
-                        isBackEnabled = overlayState.overlayReviewDetailId == null,
+                        isBackEnabled = overlayState.overlayReviewDetailId == null && overlayState.overlayReviewWriteArgs == null,
                         onOpenReviewDetail = { overlayState.overlayReviewDetailId = it },
                     )
                 },
@@ -98,8 +95,9 @@ internal fun OverlayHost(
                         overlayState.overlayProfileUserId = null
                         navigationState.showShopOnMap(shopId)
                     },
-                    onEditReview = { shopId, editedReviewId -> overlayState.overlayReviewWriteArgs = shopId to editedReviewId },
-                    onWriteReview = { shopId -> overlayState.overlayReviewWriteArgs = shopId to null },
+                    onEditReview = overlayState::openReviewEditor,
+                    onWriteReview = { shopId -> overlayState.openReviewEditor(shopId, null) },
+                    onEditShopReview = overlayState::openReviewEditor,
                     onOpenReviewDetail = { overlayState.overlayReviewDetailId = it },
                     onOpenEvent = { eventId ->
                         overlayState.overlayReviewDetailId = null

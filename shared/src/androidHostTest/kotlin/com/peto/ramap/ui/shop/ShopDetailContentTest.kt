@@ -2,17 +2,26 @@ package com.peto.ramap.ui.shop
 
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -27,6 +36,7 @@ import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.fixture.ramenShopFixture
@@ -228,6 +238,63 @@ class ShopDetailContentTest {
         }
 
     @Test
+    fun `리뷰 수정 결과는 보고 있던 매장 리뷰 목록에 즉시 반영된다`() =
+        runComposeUiTest {
+            val review =
+                Review(
+                    id = "review",
+                    shopId = "shop",
+                    body = "수정 전 방문 후기입니다",
+                    createdAt = "2026-10-14",
+                    author = ReviewAuthor("owner", "작성자"),
+                )
+            val updatedBody = "수정 후 방문 후기입니다"
+            reviews =
+                ReviewsUiState(
+                    shopId = "shop",
+                    hasLoaded = true,
+                    currentUserId = "owner",
+                    page = ShopReviewsPage(listOf(review), 1),
+                )
+            var editingReview by mutableStateOf<Review?>(null)
+            setContent {
+                val shopScreenState = rememberSaveableStateHolder()
+                val selectedReview = editingReview
+                if (selectedReview == null) {
+                    shopScreenState.SaveableStateProvider("shop") {
+                        content(onReviewEdit = { editingReview = it })
+                    }
+                } else {
+                    Column {
+                        Text(selectedReview.body)
+                        Button(
+                            onClick = {
+                                reviews = reviews.copy(page = ShopReviewsPage(listOf(selectedReview.copy(body = updatedBody)), 1))
+                                editingReview = null
+                            },
+                        ) { Text("저장") }
+                    }
+                }
+            }
+
+            val list = onNodeWithTag("shop_detail_list")
+            list.performScrollToKey("shop_detail_tabs")
+            onNodeWithText("리뷰").performClick()
+            list.performScrollToKey("shop_review:review")
+            val originalBody = onNodeWithText(review.body)
+            val originalTop = originalBody.assertIsDisplayed().getBoundsInRoot().top
+            onAllNodesWithContentDescription("매장 메뉴 더보기")
+                .filterToOne(SemanticsMatcher("화면에 보이는 더보기") { node -> node.boundsInWindow.top >= 0f && node.boundsInWindow.height > 0f })
+                .performClick()
+            onNodeWithText("수정").performClick()
+            runOnIdle { assertEquals(review, editingReview) }
+            onNodeWithText("저장").performClick()
+
+            originalBody.assertDoesNotExist()
+            assertEquals(originalTop, onNodeWithText(updatedBody).assertIsDisplayed().getBoundsInRoot().top)
+        }
+
+    @Test
     fun `멀리 떨어진 리뷰는 구성하지 않고 끝으로 바로 이동해도 다음 페이지를 한 번 요청한다`() =
         runComposeUiTest {
             reviews = ReviewsUiState(shopId = "shop", hasLoaded = true, page = reviewPage(60, 100))
@@ -325,7 +392,10 @@ class ShopDetailContentTest {
         }
 
     @Composable
-    private fun content(showReviewsOnOpen: Boolean = false) {
+    private fun content(
+        showReviewsOnOpen: Boolean = false,
+        onReviewEdit: (Review) -> Unit = {},
+    ) {
         val dispatcher = remember { NavigationEventDispatcher() }
         DisposableEffect(dispatcher) { onDispose { dispatcher.dispose() } }
         val owner =
@@ -372,7 +442,7 @@ class ShopDetailContentTest {
                                     onReviewLike = {},
                                     onRetry = { reviewRetryCount++ },
                                     onOpenProfile = {},
-                                    onReviewEdit = {},
+                                    onReviewEdit = onReviewEdit,
                                     onReviewDelete = {},
                                     onReviewReport = {},
                                     onLoadMoreReviews = { reviewLoadMoreCount++ },

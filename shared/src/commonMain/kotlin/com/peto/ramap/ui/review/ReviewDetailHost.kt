@@ -24,6 +24,7 @@ internal fun ReviewDetailHost(
     onShowShopOnMap: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     onWriteReview: (String) -> Unit,
+    onEditShopReview: (String, String) -> Unit,
     onOpenReviewDetail: (String) -> Unit,
     onOpenEvent: (String) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
@@ -51,7 +52,7 @@ internal fun ReviewDetailHost(
                 },
                 onReviewNavigate = onWriteReview,
                 onOpenProfile = onOpenProfile,
-                onEditReview = onEditReview,
+                onEditReview = onEditShopReview,
                 onEventNavigate = {
                     selectedShopId = null
                     onOpenEvent(it.id)

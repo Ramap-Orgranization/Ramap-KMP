@@ -44,6 +44,13 @@ internal class OverlayState(
     val isOverlayActive: Boolean
         get() = overlayProfileUserId != null || overlayReviewWriteArgs != null || overlayReviewDetailId != null
 
+    fun openReviewEditor(
+        shopId: String,
+        reviewId: String?,
+    ) {
+        overlayReviewWriteArgs = shopId to reviewId
+    }
+
     fun openProfile(
         userId: String,
         asOverlay: Boolean,

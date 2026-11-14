@@ -60,12 +60,8 @@ internal fun AppRoute(
             onLoginTypeSelected = onLoginTypeSelected,
             onFindVisitedShop = overlayState::openReviewShopSearch,
             onOpenReviewDetailOverlay = { reviewId -> overlayState.overlayReviewDetailId = reviewId },
-            onOpenReviewWriteOverlay = { shopId ->
-                overlayState.overlayReviewWriteArgs = shopId to null
-            },
-            onOpenReviewEditOverlay = { shopId, reviewId ->
-                overlayState.overlayReviewWriteArgs = shopId to reviewId
-            },
+            onOpenReviewWriteOverlay = { shopId -> overlayState.openReviewEditor(shopId, null) },
+            onOpenReviewEditOverlay = overlayState::openReviewEditor,
         )
 
         OverlayHost(

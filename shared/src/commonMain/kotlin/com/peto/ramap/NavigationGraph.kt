@@ -63,7 +63,7 @@ internal fun NavigationGraph(
     onLoginTypeSelected: (LoginType) -> Unit,
     onFindVisitedShop: () -> Unit,
     onOpenReviewWriteOverlay: (shopId: String) -> Unit,
-    onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
+    onOpenReviewEditOverlay: (shopId: String, reviewId: String) -> Unit,
     onOpenReviewDetailOverlay: (String) -> Unit,
 ) {
     NavigationRouter(
@@ -314,6 +314,7 @@ internal fun NavigationGraph(
                 onShowShopOnMap = { shopId -> navigationState.showShopOnMap(shopId) },
                 onEditReview = navigationState::showReviewEdit,
                 onWriteReview = onOpenReviewWriteOverlay,
+                onEditShopReview = onOpenReviewEditOverlay,
                 onOpenReviewDetail = onOpenReviewDetailOverlay,
                 onOpenEvent = navigationState::showEvent,
                 onLoginTypeSelected = onLoginTypeSelected,
@@ -449,7 +450,8 @@ internal fun NavigationGraph(
                         onDismiss = onDismiss,
                         onReviewNavigate = navigationState::showReviewWrite,
                         onOpenProfile = { userId -> openProfile(userId, false) },
-                        onEditReview = navigationState::showReviewEdit,
+                        onEditReview = onOpenReviewEditOverlay,
+                        isBackEnabled = !hasActiveOverlay,
                         isNavigationBarPadded = true,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = onEventNavigate,
@@ -470,7 +472,7 @@ private fun ShopListWithDetail(
     hasActiveOverlay: Boolean,
     openProfile: (userId: String, asOverlay: Boolean) -> Unit,
     onOpenReviewWriteOverlay: (shopId: String) -> Unit,
-    onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
+    onOpenReviewEditOverlay: (shopId: String, reviewId: String) -> Unit,
     onOpenReviewDetailOverlay: (String) -> Unit,
     content: @Composable ((String) -> Unit) -> Unit,
 ) {
