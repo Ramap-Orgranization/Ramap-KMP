@@ -137,7 +137,6 @@ private fun BookmarkedShopListContent(
                 hasMore = uiState.hasMore,
                 isLoading = uiState.isPageLoading,
                 itemKeys = shopIds,
-                // 조회 결과가 비어 있어도 다음 페이지 요청을 허용한다.
                 requestKey = uiState.remainingShopCount,
             ),
         onLoadMore = onLoadMore,

@@ -45,8 +45,6 @@ object ChromaticColor {
     val Orange050 = Color(0xFFFFF3E9)
     val Orange300 = Color(0xFFE77730)
     val Orange400 = Color(0xFFE95432)
-    val Yellow050 = Color(0xFFFFF8E9)
-    val Yellow300 = Color(0xFFEAA827)
     val Red050 = Color(0xFFFFF0F1)
     val Red300 = Color(0xFFF33151)
     val Purple050 = Color(0xFFF2F0FF)
