@@ -1,0 +1,190 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:name="building_bevel"
+        android:pathData="M5.65,6.62 h12.06 q2.4,0 2.4,2.4 v9.78 q0,2.4 -2.4,2.4 h-12.06 q-2.4,0 -2.4,-2.4 v-9.78 q0,-2.4 2.4,-2.4 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="4"
+                android:startY="10"
+                android:endX="18"
+                android:endY="22">
+                <item android:offset="0" android:color="#FFD992" />
+                <item android:offset="0.5" android:color="#D29139" />
+                <item android:offset="1" android:color="#A66217" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="facade"
+        android:pathData="M6.12,7.14 h11.83 q2.1,0 2.1,2.1 v9.31 q0,2.1 -2.1,2.1 h-11.83 q-2.1,0 -2.1,-2.1 v-9.31 q0,-2.1 2.1,-2.1 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="9"
+                android:startY="10"
+                android:endX="16"
+                android:endY="22">
+                <item android:offset="0" android:color="#FFFBEA" />
+                <item android:offset="0.5" android:color="#FFF0D2" />
+                <item android:offset="1" android:color="#E6BA75" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="ledge_shadow"
+        android:pathData="M4.02,10.97 H20.05 V13.38 Q16.04,14.45 12.31,14.27 Q7.1,14.36 4.02,13.37 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="11.09"
+                android:endX="0"
+                android:endY="14.35">
+                <item android:offset="0" android:color="#C0823B" />
+                <item android:offset="1" android:color="#00C0823B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="door_bevel"
+        android:pathData="M6.2,20.65 V15.61 C6.2,13.74 7.34,12.73 8.75,12.73 C10.15,12.73 11.33,13.84 11.33,15.61 V20.65 Z"
+        android:fillColor="#C3894D" />
+    <path
+        android:name="door"
+        android:pathData="M6.52,20.65 V15.66 C6.52,14.03 7.46,13.04 8.75,13.04 C10.02,13.04 10.98,14.04 10.98,15.66 V20.65 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="7"
+                android:startY="13.1"
+                android:endX="10.9"
+                android:endY="20.65">
+                <item android:offset="0" android:color="#583019" />
+                <item android:offset="0.5" android:color="#804825" />
+                <item android:offset="1" android:color="#67381B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="window_bevel"
+        android:pathData="M13.67,13.56 h3.99 q0.98,0 0.98,0.98 v2.09 q0,0.98 -0.98,0.98 h-3.99 q-0.98,0 -0.98,-0.98 v-2.09 q0,-0.98 0.98,-0.98 Z"
+        android:fillColor="#D2A265" />
+    <path
+        android:name="window"
+        android:pathData="M13.73,13.87 h3.86 q0.73,0 0.73,0.73 v2.01 q0,0.73 -0.73,0.73 h-3.86 q-0.73,0 -0.73,-0.73 v-2.01 q0,-0.73 0.73,-0.73 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="13"
+                android:startY="14"
+                android:endX="18.3"
+                android:endY="17.3">
+                <item android:offset="0" android:color="#583019" />
+                <item android:offset="0.5" android:color="#814B28" />
+                <item android:offset="1" android:color="#67381B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="awning_rail"
+        android:pathData="M6.13,3.28 H17.8 Q20.02,3.28 20.02,5.43 V6.51 H3.66 V5.48 Q3.66,3.28 6.13,3.28 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="3.25"
+                android:endX="0"
+                android:endY="7.08">
+                <item android:offset="0" android:color="#FFF1B6" />
+                <item android:offset="0.5" android:color="#FFC655" />
+                <item android:offset="1" android:color="#DE8C18" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="awning_panel_1"
+        android:pathData="M4,5.47 H7.82 L6.65,10.22 C6.15,12.46 2.91,12.76 2.48,10.82 C2.16,9.4 3.23,7.15 4,5.47 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="5.47"
+                android:endX="0"
+                android:endY="12.6">
+                <item android:offset="0" android:color="#FFF1B6" />
+                <item android:offset="0.5" android:color="#FFC655" />
+                <item android:offset="1" android:color="#DE8C18" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="awning_panel_2"
+        android:pathData="M7.82,5.47 H10.64 L10.53,10.41 C10.49,12.53 7.02,12.66 6.65,10.22 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="5.47"
+                android:endX="0"
+                android:endY="12.6">
+                <item android:offset="0" android:color="#FFFBEA" />
+                <item android:offset="0.5" android:color="#FFF0D2" />
+                <item android:offset="1" android:color="#E6BA75" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="awning_panel_3"
+        android:pathData="M10.64,5.47 H13.47 L14.23,10.35 C14.62,12.68 10.53,12.87 10.53,10.41 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="5.47"
+                android:endX="0"
+                android:endY="12.6">
+                <item android:offset="0" android:color="#FFF1B6" />
+                <item android:offset="0.5" android:color="#FFC655" />
+                <item android:offset="1" android:color="#DE8C18" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="awning_panel_4"
+        android:pathData="M13.47,5.47 H16.36 L18.15,10.29 C18.54,12.62 14.65,12.72 14.23,10.35 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="5.47"
+                android:endX="0"
+                android:endY="12.6">
+                <item android:offset="0" android:color="#FFFBEA" />
+                <item android:offset="0.5" android:color="#FFF0D2" />
+                <item android:offset="1" android:color="#E6BA75" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="awning_panel_5"
+        android:pathData="M16.36,5.47 H19.55 C20.35,6.93 21.58,9.08 21.52,10.36 C21.39,12.59 18.56,12.76 18.15,10.29 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="5.47"
+                android:endX="0"
+                android:endY="12.6">
+                <item android:offset="0" android:color="#FFF1B6" />
+                <item android:offset="0.5" android:color="#FFC655" />
+                <item android:offset="1" android:color="#DE8C18" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

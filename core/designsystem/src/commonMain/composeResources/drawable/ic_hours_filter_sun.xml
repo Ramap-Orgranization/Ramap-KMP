@@ -1,0 +1,70 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:translateX="0.18"
+        android:translateY="0.19">
+        <path
+            android:name="ray_bevels"
+            android:pathData="M11.85,2.94 V5.29 M19.45,7.03 L17.76,8.11 M19.84,16.6 L18.04,15.58 M11.85,20.69 V18.44 M4,16.38 L5.82,15.34 M4,7.28 L5.85,8.36"
+            android:strokeWidth="2.62"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeColor="#BF7B17"
+            android:fillColor="#00000000" />
+    </group>
+    <path
+        android:name="rays"
+        android:pathData="M11.85,2.94 V5.29 M19.45,7.03 L17.76,8.11 M19.84,16.6 L18.04,15.58 M11.85,20.69 V18.44 M4,16.38 L5.82,15.34 M4,7.28 L5.85,8.36"
+        android:strokeWidth="2.35"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="7"
+                android:startY="3"
+                android:endX="18"
+                android:endY="21">
+                <item android:offset="0" android:color="#FFE998" />
+                <item android:offset="0.5" android:color="#FFC64F" />
+                <item android:offset="1" android:color="#E39A24" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="sun_disc_bevel"
+        android:pathData="M6.38,12.16 a5.72,5.74 0,1 0,11.44,0 a5.72,5.74 0,1 0,-11.44,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="10"
+                android:startY="7"
+                android:endX="15.7"
+                android:endY="17.8">
+                <item android:offset="0" android:color="#FFD972" />
+                <item android:offset="0.5" android:color="#D78B1D" />
+                <item android:offset="1" android:color="#A66314" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="sun_disc"
+        android:pathData="M6.17,11.82 a5.60,5.64 0,1 0,11.20,0 a5.60,5.64 0,1 0,-11.20,0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="9.55"
+                android:centerY="9.37"
+                android:gradientRadius="8.42">
+                <item android:offset="0" android:color="#FFF1AA" />
+                <item android:offset="0.5" android:color="#FFC855" />
+                <item android:offset="1" android:color="#DC901C" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

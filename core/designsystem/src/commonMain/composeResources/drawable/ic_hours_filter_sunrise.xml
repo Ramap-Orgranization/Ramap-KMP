@@ -1,0 +1,86 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:name="sun_bevel"
+        android:pathData="M3.78,16.97 C4.02,12.06 7.4,9.44 11.82,9.44 C16.52,9.44 19.61,12.59 19.94,16.97 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="7"
+                android:startY="10"
+                android:endX="16"
+                android:endY="18.4">
+                <item android:offset="0" android:color="#FFEBA2" />
+                <item android:offset="0.5" android:color="#FFC64D" />
+                <item android:offset="1" android:color="#C37913" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="rising_sun"
+        android:pathData="M4.03,16.63 C4.42,12.25 7.56,9.48 11.77,9.48 C16.17,9.48 19.23,12.41 19.58,16.63 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="8.26"
+                android:centerY="11.22"
+                android:gradientRadius="11.38">
+                <item android:offset="0" android:color="#FFF1AB" />
+                <item android:offset="0.5" android:color="#FFC84F" />
+                <item android:offset="1" android:color="#EC9F23" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <group
+        android:translateX="0.14"
+        android:translateY="0.18">
+        <path
+            android:name="ray_bevels"
+            android:pathData="M11.63,4.9 V7.26 M3.89,7.79 L5.52,9.51 M19.48,7.79 L17.88,9.5"
+            android:strokeWidth="2.62"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeColor="#BD7512"
+            android:fillColor="#00000000" />
+    </group>
+    <path
+        android:name="rays"
+        android:pathData="M11.63,4.9 V7.26 M3.89,7.79 L5.52,9.51 M19.48,7.79 L17.88,9.5"
+        android:strokeWidth="2.33"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="7"
+                android:startY="4"
+                android:endX="17"
+                android:endY="11">
+                <item android:offset="0" android:color="#FFF0A8" />
+                <item android:offset="0.5" android:color="#FFC34D" />
+                <item android:offset="1" android:color="#DF8C17" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:name="horizon"
+        android:pathData="M3.21,16.54 h17.29 q1.8,0 1.8,1.8 v0 q0,1.8 -1.8,1.8 h-17.29 q-1.8,0 -1.8,-1.8 v-0 q0,-1.8 1.8,-1.8 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="16.54"
+                android:endX="0"
+                android:endY="20.15">
+                <item android:offset="0" android:color="#FFD770" />
+                <item android:offset="0.5" android:color="#F4AF31" />
+                <item android:offset="1" android:color="#AD640D" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
