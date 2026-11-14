@@ -8,19 +8,15 @@ data class OperatingNoticeFeed(
 ) {
     fun representatives(
         scheduled: Boolean,
-        query: String = "",
         bookmarkedShopIds: Set<String>? = null,
     ): List<OperatingNotice> {
-        if (scheduled) return scheduledGroups(query, bookmarkedShopIds).values.flatten().distinctBy { it.shop.id }
-        val notices = filteredItems(query, bookmarkedShopIds).map { it.notice }.filter { it.appliesOn(referenceDate) }
+        if (scheduled) return scheduledGroups(bookmarkedShopIds).values.flatten().distinctBy { it.shop.id }
+        val notices = filteredItems(bookmarkedShopIds).map { it.notice }.filter { it.appliesOn(referenceDate) }
         return representativesOn(referenceDate, notices)
     }
 
-    fun scheduledGroups(
-        query: String = "",
-        bookmarkedShopIds: Set<String>? = null,
-    ): Map<LocalDate, List<OperatingNotice>> {
-        val scheduled = scheduledNotices(query, bookmarkedShopIds)
+    fun scheduledGroups(bookmarkedShopIds: Set<String>? = null): Map<LocalDate, List<OperatingNotice>> {
+        val scheduled = scheduledNotices(bookmarkedShopIds)
         val groups = mutableMapOf<LocalDate, MutableList<OperatingNotice>>()
         for (notice in scheduled) {
             for (date in notice.scheduledDates(referenceDate)) {
@@ -53,11 +49,8 @@ data class OperatingNoticeFeed(
                     .thenComparator { first, second -> noticePriority(first.scheduledDates(referenceDate).first()).compare(first, second) },
             )
 
-    private fun scheduledNotices(
-        query: String = "",
-        bookmarkedShopIds: Set<String>? = null,
-    ): List<OperatingNotice> =
-        filteredItems(query, bookmarkedShopIds)
+    private fun scheduledNotices(bookmarkedShopIds: Set<String>? = null): List<OperatingNotice> =
+        filteredItems(bookmarkedShopIds)
             .map { it.notice }
             .filter { it.startDate > referenceDate }
 
@@ -77,13 +70,8 @@ data class OperatingNoticeFeed(
             .thenBy { if (it.type == OperatingNoticeType.EARLY_CLOSING) 0 else 1 }
             .thenBy { it.id }
 
-    private fun filteredItems(
-        query: String,
-        bookmarkedShopIds: Set<String>?,
-    ): List<OperatingNoticeFeedItem> =
-        items.filter { item ->
-            item.notice.shop.name
-                .contains(query.trim(), ignoreCase = true) &&
-                (bookmarkedShopIds == null || item.notice.shop.id in bookmarkedShopIds)
-        }
+    private fun filteredItems(bookmarkedShopIds: Set<String>?): List<OperatingNoticeFeedItem> {
+        if (bookmarkedShopIds == null) return items
+        return items.filter { it.notice.shop.id in bookmarkedShopIds }
+    }
 }

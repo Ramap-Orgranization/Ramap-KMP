@@ -18,6 +18,8 @@ import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
@@ -60,7 +62,11 @@ class OperatingNoticeRouteTest {
                 )
             val state =
                 mutableStateOf(
-                    OperatingNoticeUiState(query = "없는 매장", fallbackReferenceDate = date),
+                    OperatingNoticeUiState(
+                        savedOnly = true,
+                        personalizationState = PersonalizationBootstrapState.Success(Personalization()),
+                        fallbackReferenceDate = date,
+                    ),
                 )
             val pending = mutableStateOf<String?>(notice.id)
             var opens = 0
@@ -102,7 +108,10 @@ class OperatingNoticeRouteTest {
             }
             waitForIdle()
             onNodeWithText("알림 대상 공지").assertDoesNotExist()
-            runOnIdle { state.value = state.value.copy(query = "다른 검색") }
+            runOnIdle {
+                state.value =
+                    state.value.copy(todayOperatingNotices = listOf(notice.copy(sourceUrl = "https://example.com/notice")))
+            }
             waitForIdle()
             onNodeWithText("알림 대상 공지").assertDoesNotExist()
             runOnIdle { assertEquals(1, opens) }

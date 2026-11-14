@@ -31,7 +31,6 @@ class EventsViewModel(
 
     override suspend fun handleIntent(intent: EventsIntent) {
         when (intent) {
-            is EventsIntent.OnQueryChanged -> reduce { mapEventsToUiState(copy(query = intent.query)) }
             EventsIntent.OnSavedToggled -> toggleSaved()
             EventsIntent.OnPersonalizationRetried -> refreshPersonalization()
             EventsIntent.OnEventsRefreshed -> refreshEvents()

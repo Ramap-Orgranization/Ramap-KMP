@@ -25,8 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.button.BookmarkedFilterButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -45,13 +45,13 @@ import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.news_load_error_illustration
 import ramap.shared.generated.resources.operating_notice_empty
 import ramap.shared.generated.resources.operating_notice_error_description
 import ramap.shared.generated.resources.operating_notice_error_title
+import ramap.shared.generated.resources.operating_notice_saved
 import ramap.shared.generated.resources.operating_notice_scheduled_section
 import ramap.shared.generated.resources.operating_notice_today_section
-import ramap.shared.generated.resources.search_result_empty_message
 
 @Composable
 fun OperatingNoticeScreen(
@@ -60,12 +60,10 @@ fun OperatingNoticeScreen(
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
     onNoticeClick: (OperatingNotice) -> Unit,
-    onQueryChanged: (String) -> Unit = {},
-    onSavedToggled: () -> Unit = {},
+    onSavedToggled: (() -> Unit)? = null,
     onPersonalizationRetry: () -> Unit = {},
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
-    showFilters: Boolean = true,
     initialNoticeId: String? = null,
     onInitialNoticeOpened: () -> Unit = {},
     headerContent: (@Composable () -> Unit)? = null,
@@ -73,6 +71,13 @@ fun OperatingNoticeScreen(
     val todayTitle = stringResource(Res.string.operating_notice_today_section)
     val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
     val pullToRefreshState = rememberPullToRefreshState()
+    val isEmpty = uiState.todayShops.isEmpty() && uiState.scheduledShops.isEmpty()
+    val showHeaderAboveContent =
+        uiState.isLoading ||
+            uiState.showOperatingNoticeError ||
+            uiState.savedFilterError ||
+            (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading) ||
+            isEmpty
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
 
     LaunchedEffect(initialNoticeId, uiState) {
@@ -84,14 +89,15 @@ fun OperatingNoticeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            if (showFilters && headerContent == null) {
-                NewsFilters(
-                    query = uiState.query,
-                    savedOnly = uiState.savedOnly,
-                    onQueryChanged = onQueryChanged,
-                    onSavedToggled = onSavedToggled,
+            if (onSavedToggled != null && headerContent == null) {
+                BookmarkedFilterButton(
+                    isActive = uiState.savedOnly,
+                    onClick = onSavedToggled,
+                    modifier = Modifier.align(Alignment.End).padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentDescription = stringResource(Res.string.operating_notice_saved),
                 )
             }
+            if (showHeaderAboveContent) headerContent?.invoke()
             Box(modifier = Modifier.fillMaxSize().weight(1f)) {
                 PullToRefreshBox(
                     isRefreshing = uiState.isRefreshing,
@@ -112,7 +118,7 @@ fun OperatingNoticeScreen(
                         uiState.isLoading -> OperatingNoticeSkeleton(Modifier.fillMaxSize())
                         uiState.showOperatingNoticeError ->
                             LoadErrorContent(
-                                image = Res.drawable.laduck_error_crying,
+                                image = Res.drawable.news_load_error_illustration,
                                 title = stringResource(Res.string.operating_notice_error_title),
                                 description = stringResource(Res.string.operating_notice_error_description),
                                 onRetry = onRetry,
@@ -123,19 +129,16 @@ fun OperatingNoticeScreen(
                             OperatingNoticeSkeleton(Modifier.fillMaxSize())
                         uiState.savedFilterError ->
                             LoadErrorContent(
-                                image = Res.drawable.laduck_error_crying,
+                                image = Res.drawable.news_load_error_illustration,
                                 title = stringResource(Res.string.operating_notice_error_title),
                                 description = stringResource(Res.string.operating_notice_error_description),
                                 onRetry = onPersonalizationRetry,
                                 modifier = Modifier.fillMaxSize(),
                             )
 
-                        uiState.todayShops.isEmpty() && uiState.scheduledShops.isEmpty() ->
+                        isEmpty ->
                             ShopsEmptyContent(
-                                title =
-                                    stringResource(
-                                        if (uiState.query.isNotBlank()) Res.string.search_result_empty_message else Res.string.operating_notice_empty,
-                                    ),
+                                title = stringResource(Res.string.operating_notice_empty),
                                 modifier = Modifier.fillMaxSize(),
                                 titleStyle = AppTextStyle.T1,
                             )
@@ -242,10 +245,10 @@ private fun OperatingNoticeScheduledPreview() {
     OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()))
 }
 
-@Preview(name = "검색 결과 없음")
+@Preview(name = "영업 변동 없음")
 @Composable
-private fun OperatingNoticeSearchEmptyPreview() {
-    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(query = "없는 매장"))
+private fun OperatingNoticeEmptyPreview() {
+    OperatingNoticePreviewContent(previewState(emptyList()))
 }
 
 private fun previewState(notices: List<OperatingNotice>) =

@@ -8,10 +8,6 @@ sealed interface OperatingNoticeIntent : Intent {
         val notice: OperatingNotice,
     ) : OperatingNoticeIntent
 
-    data class OnQueryChanged(
-        val query: String,
-    ) : OperatingNoticeIntent
-
     data object OnSavedToggled : OperatingNoticeIntent
 
     data object OnPersonalizationRetried : OperatingNoticeIntent

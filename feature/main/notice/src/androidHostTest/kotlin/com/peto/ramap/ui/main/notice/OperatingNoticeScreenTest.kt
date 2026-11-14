@@ -15,11 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.navigationevent.NavigationEventDispatcher
@@ -29,6 +29,8 @@ import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
@@ -124,17 +126,22 @@ class OperatingNoticeScreenTest {
         }
 
     @Test
-    fun `검색어를 입력하면 바로 필터링하고 지우면 전체 매장을 다시 표시한다`() =
+    fun `저장 필터를 켜면 저장한 매장만 표시하고 끄면 전체 매장을 표시한다`() =
         runComposeUiTest {
-            state = state(notice("오늘 매장", today), notice("다른 매장", today))
+            val savedShopIds = setOf("오늘 매장")
+            state =
+                state(notice("오늘 매장", today), notice("다른 매장", today)).copy(
+                    bookmarkedShopIds = savedShopIds,
+                    personalizationState = PersonalizationBootstrapState.Success(Personalization(bookmarkedShopIds = savedShopIds)),
+                )
             setContent { content() }
 
-            onNodeWithText("매장명을 입력해주세요").performTextInput("오늘")
+            onNode(hasSetTextAction()).assertDoesNotExist()
+            onNodeWithContentDescription("저장한 매장").performClick()
             onNodeWithText("오늘 매장").assertExists()
             onNodeWithText("다른 매장").assertDoesNotExist()
 
-            onNodeWithContentDescription("검색어 지우기").performClick()
-            onNodeWithText("매장명을 입력해주세요").assertExists()
+            onNodeWithContentDescription("저장한 매장").performClick()
             onNodeWithText("오늘 매장").assertExists()
             onNodeWithText("다른 매장").assertExists()
         }
@@ -158,10 +165,9 @@ class OperatingNoticeScreenTest {
                         onRetry = {},
                         onShopClick = {},
                         onNoticeClick = {},
-                        onQueryChanged = { state = state.copy(query = it) },
+                        onSavedToggled = if (showFilters) ({ state = state.copy(savedOnly = !state.savedOnly) }) else null,
                         isSourceUrlSupported = { true },
                         onSourceClick = {},
-                        showFilters = showFilters,
                     )
                 }
             }

@@ -17,7 +17,6 @@ data class OperatingNoticeUiState(
     val todayOperatingNotices: List<OperatingNotice> = emptyList(),
     val scheduledOperatingNotices: List<OperatingNotice> = emptyList(),
     val feed: OperatingNoticeFeed? = null,
-    val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
     val personalizationState: PersonalizationBootstrapState = PersonalizationBootstrapState.Loading,
@@ -54,7 +53,6 @@ data class OperatingNoticeUiState(
         get() =
             noticeFeed.representatives(
                 scheduled = false,
-                query = query,
                 bookmarkedShopIds = if (savedOnly) bookmarkedShopIds else null,
             )
 
@@ -64,7 +62,6 @@ data class OperatingNoticeUiState(
     val scheduledGroups: Map<LocalDate, List<OperatingNotice>>
         get() =
             noticeFeed.scheduledGroups(
-                query = query,
                 bookmarkedShopIds = if (savedOnly) bookmarkedShopIds else null,
             )
 

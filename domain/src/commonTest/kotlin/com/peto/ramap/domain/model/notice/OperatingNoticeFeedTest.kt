@@ -22,14 +22,14 @@ class OperatingNoticeFeedTest {
     }
 
     @Test
-    fun `오늘 매장도 미래 공지를 예정에 표시하고 검색과 저장 조건을 모두 적용한다`() {
+    fun `오늘 매장도 미래 공지를 예정에 표시하고 저장한 매장으로 좁힐 수 있다`() {
         val today = notice("today")
         val future = notice("future").copy(startDate = LocalDate(2026, 10, 19), endDate = null)
         val other = future.copy(id = "other", shop = future.shop.copy(id = "other", name = "다른 매장"))
         val feed = feed(today, future, other)
         assertEquals(listOf("future", "other"), feed.representatives(true).map { it.id })
-        assertEquals(1, feed.representatives(false, "  RAMEN ", setOf("shop")).size)
-        assertEquals(0, feed.representatives(false, "ramen", emptySet()).size)
+        assertEquals(listOf(today), feed.representatives(false, bookmarkedShopIds = setOf("shop")))
+        assertEquals(emptyList(), feed.representatives(false, bookmarkedShopIds = emptySet()))
     }
 
     @Test
@@ -99,7 +99,7 @@ class OperatingNoticeFeedTest {
         assertEquals(listOf("first", "first", "first", "other", "same-later"), groups.values.flatten().map { it.id })
         assertEquals(2, feed.representatives(true).size)
         assertEquals(5, groups.values.sumOf { it.size })
-        assertEquals(listOf(LocalDate(2026, 10, 23)), feed.scheduledGroups(query = "Other").keys.toList())
+        assertEquals(listOf(LocalDate(2026, 10, 23)), feed.scheduledGroups(bookmarkedShopIds = setOf("other")).keys.toList())
         assertEquals(emptyMap(), feed.scheduledGroups(bookmarkedShopIds = emptySet()))
     }
 

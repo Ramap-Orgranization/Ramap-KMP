@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -20,8 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.button.BookmarkedFilterButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -48,9 +49,9 @@ import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_saved_empty
-import ramap.shared.generated.resources.event_list_search_empty
 import ramap.shared.generated.resources.event_list_upcoming_section
-import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.news_load_error_illustration
+import ramap.shared.generated.resources.operating_notice_saved
 
 @Composable
 fun EventsRoute(
@@ -72,10 +73,8 @@ fun EventsRoute(
         },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
-        onQueryChanged = { viewModel.dispatch(EventsIntent.OnQueryChanged(it)) },
         onSavedToggled = { viewModel.dispatch(EventsIntent.OnSavedToggled) },
         onPersonalizationRetry = { viewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
-        showFilters = true,
     )
 }
 
@@ -85,23 +84,27 @@ fun EventsScreen(
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
-    onQueryChanged: (String) -> Unit = {},
-    onSavedToggled: () -> Unit = {},
+    onSavedToggled: (() -> Unit)? = null,
     onPersonalizationRetry: () -> Unit = {},
-    showFilters: Boolean = true,
     headerContent: (@Composable () -> Unit)? = null,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
+    val showHeaderAboveContent =
+        uiState.isLoading ||
+            uiState.showError ||
+            uiState.savedFilterError ||
+            (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading)
     Column(modifier = Modifier.fillMaxSize()) {
-        if (showFilters && headerContent == null) {
-            NewsFilters(
-                query = uiState.query,
-                savedOnly = uiState.savedOnly,
-                onQueryChanged = onQueryChanged,
-                onSavedToggled = onSavedToggled,
+        if (onSavedToggled != null && headerContent == null) {
+            BookmarkedFilterButton(
+                isActive = uiState.savedOnly,
+                onClick = onSavedToggled,
+                modifier = Modifier.align(Alignment.End).padding(horizontal = 16.dp, vertical = 8.dp),
+                contentDescription = stringResource(Res.string.operating_notice_saved),
             )
         }
+        if (showHeaderAboveContent) headerContent?.invoke()
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -126,7 +129,7 @@ fun EventsScreen(
 
                     uiState.savedFilterError ->
                         LoadErrorContent(
-                            image = Res.drawable.laduck_error_crying,
+                            image = Res.drawable.news_load_error_illustration,
                             title = stringResource(Res.string.event_list_error_title),
                             description = stringResource(Res.string.event_list_error_description),
                             onRetry = onPersonalizationRetry,
@@ -135,7 +138,7 @@ fun EventsScreen(
 
                     uiState.showError ->
                         LoadErrorContent(
-                            image = Res.drawable.laduck_error_crying,
+                            image = Res.drawable.news_load_error_illustration,
                             title = stringResource(Res.string.event_list_error_title),
                             description = stringResource(Res.string.event_list_error_description),
                             onRetry = onClickRetry,
@@ -160,11 +163,7 @@ fun EventsScreen(
                             if (uiState.isEmpty) {
                                 item {
                                     val emptyMessage =
-                                        when {
-                                            uiState.query.isNotBlank() -> Res.string.event_list_search_empty
-                                            uiState.savedOnly -> Res.string.event_list_saved_empty
-                                            else -> Res.string.event_list_empty
-                                        }
+                                        if (uiState.savedOnly) Res.string.event_list_saved_empty else Res.string.event_list_empty
                                     ShopsEmptyContent(
                                         title = stringResource(emptyMessage),
                                         titleStyle = AppTextStyle.T1,

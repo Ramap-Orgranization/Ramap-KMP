@@ -249,7 +249,7 @@ class EventsViewModelTest {
         }
 
     @Test
-    fun `검색과 저장은 표시 매장 기준으로 함께 적용하고 새로고침 뒤에도 원본과 조건을 보존한다`() =
+    fun `저장 필터는 표시 매장 기준으로 적용하고 새로고침 후에도 유지한다`() =
         coroutinesTest {
             val first = event("first")
             val other = event("other").copy(venue = EventVenue.Registered(ramenShopFixture(id = "other", name = "다른 매장")))
@@ -258,14 +258,16 @@ class EventsViewModelTest {
             val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()), store)
             runCurrent()
             viewModel.dispatch(EventsIntent.OnSavedToggled)
-            viewModel.dispatch(EventsIntent.OnQueryChanged(" 다른 "))
             runCurrent()
-            assertTrue(viewModel.uiState.value.isEmpty)
+            assertEquals(
+                listOf(first),
+                viewModel.uiState.value.upcomingEvents
+                    .flatten(),
+            )
             assertEquals(listOf(first, other), viewModel.uiState.value.loadedEvents)
             assertEquals(1, repository.activeEventsRequestCount)
             repository.activeEventsDelayMillis = 1_000
             viewModel.dispatch(EventsIntent.OnEventsRefreshed)
-            viewModel.dispatch(EventsIntent.OnQueryChanged(" 매장 "))
             runCurrent()
             advanceTimeBy(1_000)
             runCurrent()

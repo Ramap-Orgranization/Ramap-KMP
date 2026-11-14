@@ -39,7 +39,6 @@ class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<
                         .map { it.notice.shop.id }
                         .toSet()
                 return base.copy(
-                    query = "라멘",
                     savedOnly = true,
                     bookmarkedShopIds = bookmarkedShopIds,
                     personalizationState =

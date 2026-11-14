@@ -36,7 +36,6 @@ class OperatingNoticeViewModel(
     override suspend fun handleIntent(intent: OperatingNoticeIntent) {
         when (intent) {
             is OperatingNoticeIntent.OnNoticeClicked -> operatingNoticeAnalytics.logNoticeSelected(intent.notice)
-            is OperatingNoticeIntent.OnQueryChanged -> reduce { copy(query = intent.query) }
             OperatingNoticeIntent.OnSavedToggled -> toggleSaved()
             OperatingNoticeIntent.OnPersonalizationRetried -> refreshPersonalization()
             OperatingNoticeIntent.OnRefreshed -> refreshOperatingNotices()

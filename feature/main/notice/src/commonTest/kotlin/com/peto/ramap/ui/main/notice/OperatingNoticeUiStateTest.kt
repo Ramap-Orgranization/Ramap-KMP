@@ -21,11 +21,13 @@ class OperatingNoticeUiStateTest {
     private val later = LocalDate(2026, 10, 23)
 
     @Test
-    fun `알림 공지는 검색과 저장 필터 및 대표 공지에 관계없이 찾는다`() {
+    fun `알림 공지는 저장 필터와 대표 공지에 관계없이 찾는다`() {
         val first = notice("first", today)
         val target = notice("target", today)
         val future = notice("future", next)
-        val filtered = state(first, target, future).copy(query = "없는 매장", savedOnly = true)
+        val filtered = state(first, target, future).copy(savedOnly = true)
+        assertTrue(filtered.todayShops.isEmpty())
+        assertTrue(filtered.scheduledShops.isEmpty())
         assertEquals(target, filtered.selectNoticeById("target")?.notice)
         assertEquals(target, filtered.selectNoticeById("target")?.notices?.first())
         assertEquals(
@@ -50,7 +52,6 @@ class OperatingNoticeUiStateTest {
         assertEquals(listOf(next, later), state.scheduledGroups.keys.toList())
         assertEquals(listOf(future, anotherDate), state.scheduledGroups.values.flatten())
         assertEquals(1, state.scheduledShops.size)
-        assertEquals(0, state.copy(query = "없는 매장").scheduledGroups.size)
     }
 
     @Test
@@ -85,7 +86,7 @@ class OperatingNoticeUiStateTest {
         assertEquals(setOf("today", "same-day"), selectedToday.notices.map { it.id }.toSet())
         assertEquals(listOf(future), selectedFuture.notices)
         assertEquals(next, selectedFuture.date)
-        val changed = state.copy(query = "다른", feed = OperatingNoticeFeed(today, emptyList()))
+        val changed = state.copy(feed = OperatingNoticeFeed(today, emptyList()))
         assertEquals(emptyList(), changed.todayShops)
         assertEquals(listOf(future), selectedFuture.notices)
     }

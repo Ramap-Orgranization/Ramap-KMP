@@ -7,6 +7,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
@@ -136,18 +137,24 @@ class OperatingNoticeViewModelTest {
         }
 
     @Test
-    fun `검색 입력은 진행 중 새로고침 완료 뒤에도 최신 조건으로 집계한다`() =
+    fun `새로고침 중 바꾼 저장 매장으로 영업 변동 목록을 갱신한다`() =
         coroutinesTest {
             val repository = FakeOperatingNoticeRepository(notices = listOf(operatingNotice(), operatingNotice("other").copy(shop = ramenShopFixture(id = "other", name = "다른 매장"))))
-            val viewModel = operatingNoticeViewModel(repository)
+            val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("shop")))
+            val viewModel = OperatingNoticeViewModel(repository, OperatingNoticeAnalytics(FakeAnalyticsTracker()), store)
             runCurrent()
+            viewModel.dispatch(OperatingNoticeIntent.OnSavedToggled)
+            runCurrent()
+            assertEquals(
+                listOf("shop"),
+                viewModel.uiState.value.todayShops
+                    .map { it.shop.id },
+            )
+
             repository.delayMillis = 1_000
             viewModel.dispatch(OperatingNoticeIntent.OnRefreshed)
-            viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged("다른"))
-            viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(" 매장 "))
             runCurrent()
-            assertEquals(2, viewModel.uiState.value.todayShops.size)
-            viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged("다른"))
+            store.updateBookmarkedShopIds(setOf("other"))
             advanceTimeBy(1_000)
             runCurrent()
             assertEquals(

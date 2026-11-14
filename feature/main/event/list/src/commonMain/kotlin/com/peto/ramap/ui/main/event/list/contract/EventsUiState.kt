@@ -12,7 +12,6 @@ data class EventsUiState(
     val summerLimitedEvents: List<ShopEvents> = emptyList(),
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
-    val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
     val personalizationState: PersonalizationBootstrapState = PersonalizationBootstrapState.Loading,

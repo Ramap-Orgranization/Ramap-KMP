@@ -12,10 +12,6 @@ sealed interface EventsIntent : Intent {
         val event: ShopEvent,
     ) : EventsIntent
 
-    data class OnQueryChanged(
-        val query: String,
-    ) : EventsIntent
-
     data object OnSavedToggled : EventsIntent
 
     data object OnPersonalizationRetried : EventsIntent

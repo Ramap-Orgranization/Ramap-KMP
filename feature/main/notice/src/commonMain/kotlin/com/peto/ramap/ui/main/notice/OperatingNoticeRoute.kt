@@ -30,12 +30,10 @@ fun OperatingNoticeRoute(
         onRefresh = { viewModel.dispatch(OperatingNoticeIntent.OnRefreshed) },
         onRetry = { viewModel.dispatch(OperatingNoticeIntent.OnRetried) },
         onShopClick = onShopClick,
-        onQueryChanged = { viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(it)) },
         onSavedToggled = { viewModel.dispatch(OperatingNoticeIntent.OnSavedToggled) },
         onPersonalizationRetry = { viewModel.dispatch(OperatingNoticeIntent.OnPersonalizationRetried) },
         onNoticeClick = { viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(it)) },
         isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
         onSourceClick = ExternalUriOpener::open,
-        showFilters = true,
     )
 }
