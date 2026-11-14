@@ -1790,6 +1790,7 @@ class MapShopSectionsRegressionTest {
                 ramenShopRepository.requestedSearchQueries,
             )
             assertEquals(listOf(50), ramenShopRepository.requestedSearchLimits)
+            assertEquals(listOf("ramen shop"), viewModel.uiState.value.recentSearches)
             assertEquals(shops, viewModel.uiState.value.search.results)
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertEquals(shops, viewModel.uiState.value.markerShops)
@@ -1916,6 +1917,10 @@ class MapShopSectionsRegressionTest {
                 runCurrent()
 
                 assertEquals("", viewModel.uiState.value.search.input)
+                assertTrue(
+                    viewModel.uiState.value.recentSearches
+                        .isEmpty(),
+                )
                 assertEquals(null, viewModel.uiState.value.searchResultGuide)
                 assertEquals(
                     showToastSideEffect(Res.string.search_result_empty_message),
@@ -2183,10 +2188,8 @@ class MapShopSectionsRegressionTest {
                 )
             val subscribedViewModel =
                 SubscribedShopsViewModel(
-                    notificationRepository = FakeNotificationSettingsRepository(),
                     ramenShopRepository = shops,
                     personalizationStore = personalizationRepository,
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             val myViewModel =
                 MyTabViewModel(
@@ -2630,6 +2633,7 @@ class MapShopSectionsRegressionTest {
 
                     val state = viewModel.uiState.value.map
                     assertTrue(state.isBookmarkedView)
+                    assertTrue(state.recentSearches.isEmpty())
                     assertFalse(state.showSearchResults)
                     assertFalse(state.showRecommendationList)
                     assertEquals(emptyFilteredResultToastSideEffect(), awaitItem())
@@ -3223,6 +3227,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
 
             val state = viewModel.uiState.value
+            assertEquals(listOf("비토리"), state.recentSearches)
             assertEquals(village, state.search.selectedPlace)
             assertEquals(village.location, state.map.placeFocusRequest?.location)
         }
@@ -3300,12 +3305,18 @@ class MapShopSectionsRegressionTest {
             runCurrent()
             val firstRequest = requireNotNull(viewModel.uiState.value.map.placeFocusRequest)
             viewModel.dispatch(MapIntent.OnPlaceFocusConsumed(firstRequest))
+            viewModel.dispatch(MapIntent.OnRecentSearchesCleared)
             runCurrent()
+            assertTrue(
+                viewModel.uiState.value.recentSearches
+                    .isEmpty(),
+            )
             viewModel.dispatch(OnQueryChanged("야탑역"))
             runCurrent()
 
             val nextRequest = requireNotNull(viewModel.uiState.value.map.placeFocusRequest)
             assertEquals(1, places.requests.size)
+            assertEquals(listOf("야탑역"), viewModel.uiState.value.recentSearches)
             assertEquals(place.location, nextRequest.location)
             assertEquals(true, nextRequest.sequence > firstRequest.sequence)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
@@ -3342,6 +3353,10 @@ class MapShopSectionsRegressionTest {
                     .toList(),
             )
             assertEquals(true, viewModel.uiState.value.search.hasSearchFailure)
+            assertTrue(
+                viewModel.uiState.value.recentSearches
+                    .isEmpty(),
+            )
         }
 
     @Test
@@ -3362,6 +3377,10 @@ class MapShopSectionsRegressionTest {
             )
             assertEquals("성남 시청", viewModel.uiState.value.search.input)
             assertEquals(true, viewModel.uiState.value.showSearchResults)
+            assertTrue(
+                viewModel.uiState.value.recentSearches
+                    .isEmpty(),
+            )
         }
 
     @Test
@@ -3378,6 +3397,10 @@ class MapShopSectionsRegressionTest {
             advanceTimeBy(500)
             runCurrent()
             assertEquals(true, viewModel.uiState.value.isSearchLoading)
+            assertTrue(
+                viewModel.uiState.value.recentSearches
+                    .isEmpty(),
+            )
             assertEquals(
                 emptyList(),
                 viewModel.uiState.value.search.places
@@ -3386,6 +3409,7 @@ class MapShopSectionsRegressionTest {
             advanceTimeBy(500)
             runCurrent()
             assertEquals("세종", viewModel.uiState.value.search.input)
+            assertEquals(listOf("세종"), viewModel.uiState.value.recentSearches)
             assertEquals(
                 listOf(place),
                 viewModel.uiState.value.search.places

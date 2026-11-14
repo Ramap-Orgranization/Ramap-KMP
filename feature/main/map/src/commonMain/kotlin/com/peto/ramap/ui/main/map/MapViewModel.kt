@@ -386,8 +386,7 @@ class MapViewModel(
         val placeCenter = currentState.cameraPosition?.center ?: shopCenter ?: DEFAULT_SEARCH_CENTER
         if (canReuseSearchResults(query, shopCenter, placeCenter)) {
             cancelTask(SEARCH_TASK_KEY)
-            recordRecentSearch(query.value)
-            presentSearchResults()
+            presentSearchResults(query)
             return
         }
 
@@ -636,7 +635,6 @@ class MapViewModel(
         reduce {
             copy(search = search.updateResults(query, shops, places, shopCenter, placeCenter).copy(hasSearchFailure = hasFailure))
         }
-        if (shopResult is RamapResult.Success || placeResult is RamapResult.Success) recordRecentSearch(query.value)
         if (shopResult is RamapResult.Error) {
             handleFailedSearchResult(shopResult.error)
         } else if (placeResult is RamapResult.Error) {
@@ -646,7 +644,7 @@ class MapViewModel(
             if (!hasFailure) presentEmptySearchResult()
             return
         }
-        presentSearchResults()
+        presentSearchResults(query)
     }
 
     private fun presentEmptySearchResult() {
@@ -661,11 +659,14 @@ class MapViewModel(
         }
     }
 
-    private fun presentSearchResults() {
+    private fun presentSearchResults(query: SearchQuery) {
         val state = currentState
         val search = state.search
+        val shops = state.searchResultShops
+        if (!search.hasSearchFailure && (shops.isNotEmpty() || search.places.isNotEmpty())) {
+            recordRecentSearch(query.value)
+        }
         if (search.places.isEmpty()) {
-            val shops = state.searchResultShops
             if (shops.isEmpty() && state.hasActiveFilters && !search.hasSearchFailure) {
                 showEmptyFilteredResultToast()
             }
