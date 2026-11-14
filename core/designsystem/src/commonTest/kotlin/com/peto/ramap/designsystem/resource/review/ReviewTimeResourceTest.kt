@@ -79,7 +79,7 @@ class ReviewTimeResourceTest {
     @Test
     fun `리뷰 상세는 기기 시간대의 작성 날짜와 시각을 분까지 표시한다`() {
         assertEquals(
-            UiText(Res.string.review_time_date, listOf("2026/01/01 00:05")),
+            UiText(Res.string.review_time_date, listOf("2026.01.01 00:05")),
             reviewDateTimeResource("2025-12-31T15:05:00Z", timeZone),
         )
     }

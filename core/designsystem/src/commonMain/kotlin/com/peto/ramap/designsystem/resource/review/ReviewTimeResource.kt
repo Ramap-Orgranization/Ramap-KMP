@@ -22,9 +22,9 @@ import kotlin.time.Instant
 private val reviewDateTimeFormat =
     LocalDateTime.Format {
         year()
-        char('/')
+        char('.')
         monthNumber()
-        char('/')
+        char('.')
         day()
         char(' ')
         hour()
