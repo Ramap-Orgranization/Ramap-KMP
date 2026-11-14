@@ -17,5 +17,6 @@ enum class AnalyticsSource(
     RECENTLY_VIEWED("recently_viewed"),
     REVIEW_PROFILE("review_profile"),
     OPERATING_NOTICE("operating_notice"),
+    NEW_SHOPS("new_shops"),
     ONBOARDING("onboarding"),
 }

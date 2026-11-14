@@ -7,6 +7,7 @@ kotlin {
         api(projects.feature.main.event.list)
         api(projects.feature.main.event.detail)
         api(projects.feature.main.notice)
+        api(projects.feature.main.newshops)
         api(projects.feature.main.map)
         api(projects.feature.main.map.archive)
         api(projects.feature.main.ranking)

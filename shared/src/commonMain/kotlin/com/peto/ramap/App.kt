@@ -57,9 +57,9 @@ import kotlinx.coroutines.flow.onStart
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.personalization_load_failure_message
 import ramap.shared.generated.resources.personalization_load_failure_title
+import ramap.shared.generated.resources.ramen_load_error_illustration
 
 @OptIn(ExperimentalCoilApi::class)
 @Composable
@@ -180,7 +180,7 @@ private fun AppContent(
 
             personalizationState == PersonalizationBootstrapState.Error ->
                 LoadErrorContent(
-                    image = Res.drawable.laduck_error_confused,
+                    image = Res.drawable.ramen_load_error_illustration,
                     title = stringResource(Res.string.personalization_load_failure_title),
                     description = stringResource(Res.string.personalization_load_failure_message),
                     onRetry = { retryRequests.tryEmit(Unit) },

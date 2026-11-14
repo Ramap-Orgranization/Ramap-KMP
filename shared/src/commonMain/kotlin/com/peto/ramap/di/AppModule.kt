@@ -19,6 +19,7 @@ import com.peto.ramap.ui.main.feed.di.feedModule
 import com.peto.ramap.ui.main.map.archive.di.archiveModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.myTabModule
+import com.peto.ramap.ui.main.newshops.di.newShopsModule
 import com.peto.ramap.ui.main.notice.di.noticeModule
 import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
@@ -52,6 +53,7 @@ internal val appModule =
             eventDetailModule,
             eventsModule,
             noticeModule,
+            newShopsModule,
             mapModule,
             archiveModule,
             importationModule,

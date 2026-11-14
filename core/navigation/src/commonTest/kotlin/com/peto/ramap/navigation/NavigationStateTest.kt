@@ -335,6 +335,18 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `신매장에서 뒤로 가면 같은 새소식 경로의 이벤트 탭을 보여 준다`() {
+        val state = navigationState(selectedTab = TabStatus.EVENT)
+        val newsRoute = state.currentRoute
+        state.selectNewsTab(NewsTab.NEW_SHOPS)
+
+        state.pop()
+
+        assertEquals(NewsTab.EVENTS, state.selectedNewsTab)
+        assertEquals(newsRoute, state.currentRoute)
+    }
+
+    @Test
     fun `이전 버전에서 열었던 영업 변동 화면을 새소식 탭 선택으로 복원한다`() {
         val json = Json { serializersModule = navKeySerializersModule() }
         val legacyRoute =

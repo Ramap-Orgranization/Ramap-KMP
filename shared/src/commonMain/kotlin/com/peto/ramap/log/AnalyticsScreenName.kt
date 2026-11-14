@@ -17,6 +17,7 @@ internal fun ScreenRoutes.analyticsScreenName(newsTab: NewsTab): String =
             when (newsTab) {
                 NewsTab.EVENTS -> "event_list"
                 NewsTab.OPERATING_NOTICES -> "operating_notice"
+                NewsTab.NEW_SHOPS -> "new_shops"
             }
         ScreenRoutes.OperatingNoticeRoutes -> "operating_notice"
         is ScreenRoutes.RankingTabRoutes -> "ranking"

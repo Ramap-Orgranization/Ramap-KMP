@@ -15,6 +15,7 @@ internal fun NewsScreen(
     selectedTab: NewsTab,
     eventsContent: @Composable () -> Unit,
     operatingNoticesContent: @Composable () -> Unit,
+    newShopsContent: @Composable () -> Unit,
 ) {
     val tabStateHolder = rememberSaveableStateHolder()
     Box(
@@ -28,6 +29,7 @@ internal fun NewsScreen(
             when (selectedTab) {
                 NewsTab.EVENTS -> eventsContent()
                 NewsTab.OPERATING_NOTICES -> operatingNoticesContent()
+                NewsTab.NEW_SHOPS -> newShopsContent()
             }
         }
     }

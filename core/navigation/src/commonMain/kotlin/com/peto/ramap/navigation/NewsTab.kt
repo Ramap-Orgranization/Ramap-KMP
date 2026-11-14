@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 enum class NewsTab {
     EVENTS,
     OPERATING_NOTICES,
+    NEW_SHOPS,
 }

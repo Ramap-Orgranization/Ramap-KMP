@@ -15,4 +15,5 @@ enum class NavigationSource(
     EVENT_DETAIL("event_detail"),
     SHARED_LINK("shared_link"),
     OPERATING_NOTICE("operating_notice"),
+    NEW_SHOPS("new_shops"),
 }

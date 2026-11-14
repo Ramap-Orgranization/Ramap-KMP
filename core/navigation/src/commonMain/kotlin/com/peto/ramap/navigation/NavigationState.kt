@@ -170,7 +170,7 @@ class NavigationState(
             return
         }
 
-        if (selectedTab == TabStatus.EVENT && selectedNewsTab == NewsTab.OPERATING_NOTICES) {
+        if (selectedTab == TabStatus.EVENT && selectedNewsTab != NewsTab.EVENTS) {
             selectedNewsTab = NewsTab.EVENTS
             return
         }

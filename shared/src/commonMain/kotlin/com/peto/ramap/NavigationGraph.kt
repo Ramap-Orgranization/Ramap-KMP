@@ -114,6 +114,7 @@ internal fun NavigationGraph(
                         NavigationSource.RANKING -> AnalyticsSource.RANKING
                         NavigationSource.SUBSCRIBED_SHOPS -> AnalyticsSource.SUBSCRIBED_SHOPS
                         NavigationSource.OPERATING_NOTICE -> AnalyticsSource.OPERATING_NOTICE
+                        NavigationSource.NEW_SHOPS -> AnalyticsSource.NEW_SHOPS
                         NavigationSource.SHARED_LINK, NavigationSource.HIDDEN_SHOPS, null -> AnalyticsSource.MAP
                     },
             )
@@ -174,6 +175,7 @@ internal fun NavigationGraph(
             ShopListWithDetail(
                 navigationState = navigationState,
                 navigationSource = null,
+                mapReturnTab = TabStatus.MY,
                 originSource = AnalyticsSource.REVIEW_PROFILE,
                 hasActiveOverlay = hasActiveOverlay,
                 openProfile = openProfile,
@@ -338,17 +340,30 @@ internal fun NavigationGraph(
             )
         },
         newsScreen = { route ->
-            NewsRoute(
-                route = route,
-                onClickEvent = { event -> navigationState.showEvent(event.id) },
-                onShopClick = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId = shopId,
-                        source = NavigationSource.OPERATING_NOTICE,
-                    )
-                },
+            ShopListWithDetail(
                 navigationState = navigationState,
-            )
+                navigationSource = NavigationSource.NEW_SHOPS,
+                mapReturnTab = null,
+                originSource = AnalyticsSource.NEW_SHOPS,
+                hasActiveOverlay = hasActiveOverlay,
+                openProfile = openProfile,
+                onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
+                onOpenReviewEditOverlay = onOpenReviewEditOverlay,
+                onOpenReviewDetailOverlay = onOpenReviewDetailOverlay,
+            ) { onNewShopClick ->
+                NewsRoute(
+                    route = route,
+                    onClickEvent = { event -> navigationState.showEvent(event.id) },
+                    onShopClick = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId = shopId,
+                            source = NavigationSource.OPERATING_NOTICE,
+                        )
+                    },
+                    onNewShopClick = onNewShopClick,
+                    navigationState = navigationState,
+                )
+            }
         },
         notificationSettingsScreen = {
             NotificationSettingsRoute(
@@ -359,6 +374,7 @@ internal fun NavigationGraph(
             ShopListWithDetail(
                 navigationState = navigationState,
                 navigationSource = NavigationSource.SUBSCRIBED_SHOPS,
+                mapReturnTab = TabStatus.MY,
                 originSource = AnalyticsSource.SUBSCRIBED_SHOPS,
                 hasActiveOverlay = hasActiveOverlay,
                 openProfile = openProfile,
@@ -381,6 +397,7 @@ internal fun NavigationGraph(
             ShopListWithDetail(
                 navigationState = navigationState,
                 navigationSource = NavigationSource.BOOKMARKED_SHOPS,
+                mapReturnTab = TabStatus.MY,
                 originSource = AnalyticsSource.BOOKMARKED_SHOPS,
                 hasActiveOverlay = hasActiveOverlay,
                 openProfile = openProfile,
@@ -448,6 +465,7 @@ internal fun NavigationGraph(
 private fun ShopListWithDetail(
     navigationState: NavigationState,
     navigationSource: NavigationSource?,
+    mapReturnTab: TabStatus?,
     originSource: AnalyticsSource,
     hasActiveOverlay: Boolean,
     openProfile: (userId: String, asOverlay: Boolean) -> Unit,
@@ -470,7 +488,7 @@ private fun ShopListWithDetail(
                     navigationState.showShopOnMap(
                         shopId = selectedId,
                         source = navigationSource,
-                        returnTab = TabStatus.MY,
+                        returnTab = mapReturnTab,
                         showShopDetail = false,
                     )
                 },
