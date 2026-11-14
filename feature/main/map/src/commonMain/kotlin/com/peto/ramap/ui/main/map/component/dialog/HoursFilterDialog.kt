@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.component
+package com.peto.ramap.ui.main.map.component.dialog
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -54,7 +54,6 @@ import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.map.component.dialog.Option
 import com.peto.ramap.ui.main.map.contract.HoursFilterDialogUiState
 import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.DrawableResource
@@ -105,7 +104,11 @@ internal fun HoursFilterDialog(
                     .safeDrawingPadding(),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.matchParentSize().noRippleClickable(onClick = onDismiss))
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .noRippleClickable(onClick = onDismiss)
+            )
             HoursFilterDialogContent(
                 state = state,
                 window = window,

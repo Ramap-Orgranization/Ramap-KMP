@@ -15,6 +15,7 @@ import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.domain.model.shop.ShopVisitTimeWindow
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.component.dialog.HoursFilterDialog
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.number
 import org.jetbrains.compose.resources.stringResource

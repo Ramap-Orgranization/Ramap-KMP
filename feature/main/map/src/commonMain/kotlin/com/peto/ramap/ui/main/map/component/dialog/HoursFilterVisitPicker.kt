@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.component
+package com.peto.ramap.ui.main.map.component.dialog
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
