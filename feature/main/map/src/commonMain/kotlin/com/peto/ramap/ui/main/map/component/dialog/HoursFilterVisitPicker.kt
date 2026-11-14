@@ -157,7 +157,7 @@ private fun VisitDateTile(
             modifier
                 .heightIn(min = 66.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(if (isSelected) BrandColor.Primary else CommonColor.White)
+                .background(if (isSelected) BrandColor.SubtleFill else CommonColor.White)
                 .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
                 .semantics { contentDescription = description }
                 .padding(vertical = 4.dp),
